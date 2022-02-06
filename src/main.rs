@@ -23,6 +23,10 @@ enum AppSubCommand {
         /// dotfilesリポジトリの場所。相対パスの場合はホームディレクトリを基準とする。
         repository: PathBuf,
 
+        #[clap(long = "base", short = 'b', env = "DOTFILES_BASE")]
+        /// dotfilesをインストールするディレクトリ。デフォルト値はホームディレクトリ。
+        install_base: Option<PathBuf>,
+
         files_and_dirs: Vec<PathBuf>,
     },
     #[clap(visible_alias = "i")]
@@ -36,6 +40,10 @@ enum AppSubCommand {
         )]
         /// dotfilesリポジトリの場所。相対パスの場合はホームディレクトリを基準とする。
         repository: PathBuf,
+
+        #[clap(long = "base", short = 'b', env = "DOTFILES_BASE")]
+        /// dotfilesをインストールするディレクトリ。デフォルト値はホームディレクトリ。
+        install_base: Option<PathBuf>,
     },
 }
 fn main() {
