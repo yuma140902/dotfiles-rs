@@ -49,4 +49,15 @@ enum AppSubCommand {
 fn main() {
     let arg = AppArg::parse();
     dbg!(&arg);
+    match arg.subcommand {
+        AppSubCommand::Pick {
+            repository,
+            install_base,
+            files_and_dirs,
+        } => dotfiles::pick(&repository, &install_base, &files_and_dirs),
+        AppSubCommand::Install {
+            repository,
+            install_base,
+        } => todo!(),
+    }
 }
