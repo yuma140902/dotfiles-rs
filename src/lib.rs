@@ -105,7 +105,11 @@ fn try_pick_files_and_dirs<'a>(
         }
     }
     for path_in_home in files_and_dirs {
-        let path_in_repo = next_if_fail!(get_path_in_repo(&repository, &install_base, path_in_home) => err_handler);
+        let path_rel = next_if_fail!(RelPath::with_virtual_working_dir(path_in_home, &install_base)
+            => |err| SinglePickError { path: &path_in_home, kind: PickErrorKind::RelPath(err) } => err_handler);
+
+        let path_in_repo = next_if_fail!(AbsPath::with_virtual_working_dir(path_rel, &repository)
+            => |err| SinglePickError { path: &path_in_home, kind: PickErrorKind::AbsPath(err) } => err_handler);
 
         eprintln!(
             "copying {} -> {}",
@@ -130,33 +134,6 @@ fn try_pick_files_and_dirs<'a>(
     }
 
     Ok(())
-}
-
-fn get_path_in_repo<'a>(
-    repository: &AbsPath,
-    install_base: &AbsPath,
-    path_in_home: &'a impl AsRef<Path>,
-) -> Result<AbsPath, SinglePickError<'a>> {
-    dbg!(path_absolutize::Absolutize::absolutize_from(
-        path_in_home.as_ref(),
-        install_base.as_ref()
-    ));
-    dbg!(
-        RelPath::with_virtual_working_dir(&path_in_home, install_base)
-            .unwrap()
-            .as_ref()
-    );
-    let rel_path =
-        RelPath::with_virtual_working_dir(&path_in_home, install_base).map_err(|err| {
-            SinglePickError {
-                path: &path_in_home.as_ref(),
-                kind: PickErrorKind::RelPath(err),
-            }
-        })?;
-    AbsPath::with_virtual_working_dir(rel_path, repository).map_err(|err| SinglePickError {
-        path: &path_in_home.as_ref(),
-        kind: PickErrorKind::AbsPath(err),
-    })
 }
 
 fn remove_file_or_directory(path: impl AsRef<Path>) -> Result<(), std::io::Error> {
