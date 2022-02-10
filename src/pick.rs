@@ -1,8 +1,10 @@
 use std::fs;
+use std::path::Path;
 use std::path::PathBuf;
 
 use crate::error::IntoIoError;
 use crate::error::IoErr;
+use crate::repo::Info;
 use crate::AbsPath;
 use crate::RelPath;
 
@@ -22,12 +24,12 @@ pub fn try_pick_files_and_dirs<'a>(
             if result == PickStatus::Skipped {
                 eprintln!("Skipped");
             }
-        } else if path_in_home.as_ref().is_file() {
+        } else if path_in_home.as_ref().is_dir() {
             eprintln!(
                 "Picking up directory {}",
                 path_in_home.as_ref().to_string_lossy()
             );
-            let result = pick_dir(repository, install_base, &path_in_home)?;
+            let result = pick_dir(repository, install_base, &path_in_home, &mut dirs)?;
             if result == PickStatus::Skipped {
                 eprintln!("Skipped");
             }
@@ -40,7 +42,7 @@ pub fn try_pick_files_and_dirs<'a>(
 #[derive(Debug, PartialEq)]
 enum PickStatus {
     Picked,
-    Skipped,
+    Skipped, // TODO
 }
 
 fn pick_file(
@@ -51,7 +53,7 @@ fn pick_file(
     let path_rel = RelPath::with_virtual_working_dir(path_in_home, &install_base)
         .map_err(IntoIoError::into_ioerr)?;
 
-    let path_in_repo = AbsPath::with_virtual_working_dir(path_rel, &repository)
+    let path_in_repo = AbsPath::with_virtual_working_dir(&path_rel, &repository)
         .map_err(IntoIoError::into_ioerr)?;
 
     eprintln!(
@@ -78,6 +80,48 @@ fn pick_dir(
     repository: &AbsPath,
     install_base: &AbsPath,
     path_in_home: &AbsPath,
+    dirs: &mut Vec<RelPath>,
 ) -> Result<PickStatus, IoErr> {
-    todo!()
+    let path_rel = RelPath::with_virtual_working_dir(path_in_home, &install_base)
+        .map_err(IntoIoError::into_ioerr)?;
+
+    let path_in_repo = AbsPath::with_virtual_working_dir(&path_rel, &repository)
+        .map_err(IntoIoError::into_ioerr)?;
+
+    eprintln!(
+        "copying {} -> {}",
+        path_in_home.as_ref().to_string_lossy(),
+        path_in_repo.as_ref().to_string_lossy()
+    );
+    copy_dir_recursive(path_in_home, &path_in_repo)?;
+
+    eprintln!("removing {}", path_in_home.as_ref().to_string_lossy());
+    fs::remove_dir_all(path_in_home)?;
+
+    eprintln!(
+        "creating symlink {} -> {}",
+        path_in_home.as_ref().to_string_lossy(),
+        path_in_repo.as_ref().to_string_lossy()
+    );
+    crate::make_symlink(path_in_home, &path_in_repo)?;
+
+    dirs.push(path_rel);
+
+    Ok(PickStatus::Picked)
+}
+
+/// ディレクトリを再帰的にコピーする。幅優先である
+fn copy_dir_recursive(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<(), IoErr> {
+    fs::create_dir(&to)?;
+    for entry in from.as_ref().read_dir()? {
+        let entry = entry?;
+        let path = entry.path();
+        let dest = to.as_ref().join(entry.file_name());
+        if entry.file_type()?.is_file() {
+            fs::copy(path, dest)?;
+        } else if entry.file_type()?.is_dir() {
+            copy_dir_recursive(path, dest)?;
+        }
+    }
+    Ok(())
 }
