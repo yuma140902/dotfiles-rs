@@ -9,6 +9,7 @@ use once_cell::sync::Lazy;
 pub type AbsPath = more_path_types::Path<Absolute, Any>;
 pub type RelPath = more_path_types::Path<Relative, Any>;
 
+mod error;
 mod install;
 mod pick;
 mod repo;
