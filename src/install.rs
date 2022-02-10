@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use more_path_types::AbsolutePathError;
 use more_path_types::RelativePathError;
 
@@ -16,17 +14,26 @@ pub fn try_install(repository: &AbsPath, install_base: &AbsPath) -> Result<(), s
             let path_in_repo = AbsPath::new(file).map_err(|err| match err {
                 AbsolutePathError::Absolutize { io_error } => io_error,
             })?;
-            try_install_file(repository, install_base, &path_in_repo)?;
+            let result = try_install_file(repository, install_base, &path_in_repo)?;
+            if result == InstallStatus::Skipped {
+                eprintln!("Skipped");
+            }
         }
     }
     Ok(())
 }
 
-pub fn try_install_file(
+#[derive(Debug, PartialEq)]
+enum InstallStatus {
+    Installed,
+    Skipped,
+}
+
+fn try_install_file(
     repository: &AbsPath,
     install_base: &AbsPath,
     path_in_repo: &AbsPath,
-) -> Result<(), std::io::Error> {
+) -> Result<InstallStatus, std::io::Error> {
     let path_rel =
         RelPath::with_virtual_working_dir(path_in_repo, repository).map_err(|err| match err {
             RelativePathError::NoWorkingDirectory { io_error } => io_error,
@@ -41,6 +48,10 @@ pub fn try_install_file(
             AbsolutePathError::Absolutize { io_error } => io_error,
         })?;
 
+    if path_in_home.as_ref().exists() {
+        return Ok(InstallStatus::Skipped);
+    }
+
     eprintln!(
         "creating symlink {} -> {}",
         path_in_home.as_ref().to_string_lossy(),
@@ -48,5 +59,5 @@ pub fn try_install_file(
     );
     crate::make_symlink(&path_in_home, &path_in_repo)?;
 
-    Ok(())
+    Ok(InstallStatus::Installed)
 }
