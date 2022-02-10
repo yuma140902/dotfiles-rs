@@ -1,11 +1,9 @@
-use more_path_types::AbsolutePathError;
-use more_path_types::RelativePathError;
-
 use crate::error::IntoIoError;
+use crate::error::IoErr;
 use crate::AbsPath;
 use crate::RelPath;
 
-pub fn try_install(repository: &AbsPath, install_base: &AbsPath) -> Result<(), std::io::Error> {
+pub fn try_install(repository: &AbsPath, install_base: &AbsPath) -> Result<(), IoErr> {
     eprintln!("WARNING: ディレクトリのインストールは未実装");
     for entry in repository.as_ref().read_dir()? {
         let entry = entry?;
@@ -32,7 +30,7 @@ fn try_install_file(
     repository: &AbsPath,
     install_base: &AbsPath,
     path_in_repo: &AbsPath,
-) -> Result<InstallStatus, std::io::Error> {
+) -> Result<InstallStatus, IoErr> {
     let path_rel = RelPath::with_virtual_working_dir(path_in_repo, repository)
         .map_err(IntoIoError::into_ioerr)?;
 

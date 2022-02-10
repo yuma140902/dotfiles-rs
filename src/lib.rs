@@ -1,6 +1,8 @@
 use std::path::Path;
 use std::path::PathBuf;
 
+use crate::error::IoErr;
+
 use more_path_types::Absolute;
 use more_path_types::Any;
 use more_path_types::Relative;
@@ -42,7 +44,7 @@ pub fn install(repository: &PathBuf, install_base: &Option<PathBuf>) {
     }
 }
 
-fn make_symlink(symlink_path: impl AsRef<Path>, target: &AbsPath) -> Result<(), std::io::Error> {
+fn make_symlink(symlink_path: impl AsRef<Path>, target: &AbsPath) -> Result<(), IoErr> {
     let symlink_path = symlink_path.as_ref();
     let target = target.as_ref();
     if target.is_file() {
@@ -50,7 +52,7 @@ fn make_symlink(symlink_path: impl AsRef<Path>, target: &AbsPath) -> Result<(), 
     } else if target.is_dir() {
         symlink::symlink_dir(target, symlink_path)?;
     } else {
-        return Err(std::io::Error::new(
+        return Err(IoErr::new(
             std::io::ErrorKind::Other,
             "could not make symlink",
         ));

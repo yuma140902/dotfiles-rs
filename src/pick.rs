@@ -2,10 +2,9 @@ use std::fs;
 use std::path::PathBuf;
 
 use crate::error::IntoIoError;
+use crate::error::IoErr;
 use crate::AbsPath;
 use crate::RelPath;
-
-type IoErr = std::io::Error;
 
 pub fn try_pick_files_and_dirs<'a>(
     repository: &AbsPath,
@@ -48,7 +47,7 @@ fn pick_file(
     repository: &AbsPath,
     install_base: &AbsPath,
     path_in_home: &AbsPath,
-) -> Result<PickStatus, std::io::Error> {
+) -> Result<PickStatus, IoErr> {
     let path_rel = RelPath::with_virtual_working_dir(path_in_home, &install_base)
         .map_err(IntoIoError::into_ioerr)?;
 
@@ -79,6 +78,6 @@ fn pick_dir(
     repository: &AbsPath,
     install_base: &AbsPath,
     path_in_home: &AbsPath,
-) -> Result<PickStatus, std::io::Error> {
+) -> Result<PickStatus, IoErr> {
     todo!()
 }
