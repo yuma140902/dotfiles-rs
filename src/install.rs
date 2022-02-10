@@ -1,3 +1,5 @@
+use std::fs;
+
 use crate::error::IntoIoError;
 use crate::error::IoErr;
 use crate::AbsPath;
@@ -46,6 +48,9 @@ fn try_install_file(
         path_in_home.as_ref().to_string_lossy(),
         path_in_repo.as_ref().to_string_lossy(),
     );
+    if let Some(dir) = path_in_home.as_ref().parent() {
+        fs::create_dir_all(dir)?;
+    }
     crate::make_symlink(&path_in_home, &path_in_repo)?;
 
     Ok(InstallStatus::Installed)

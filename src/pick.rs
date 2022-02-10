@@ -71,6 +71,9 @@ fn pick_file(
         path_in_home.as_ref().to_string_lossy(),
         path_in_repo.as_ref().to_string_lossy()
     );
+    if let Some(dir) = path_in_repo.as_ref().parent() {
+        fs::create_dir_all(dir)?;
+    }
     fs::copy(path_in_home, &path_in_repo)?;
 
     eprintln!("removing {}", path_in_home.as_ref().to_string_lossy());
@@ -103,6 +106,9 @@ fn pick_dir(
         path_in_home.as_ref().to_string_lossy(),
         path_in_repo.as_ref().to_string_lossy()
     );
+    if let Some(dir) = path_in_repo.as_ref().parent() {
+        fs::create_dir_all(dir)?;
+    }
     copy_dir_recursive(path_in_home, &path_in_repo)?;
 
     eprintln!("removing {}", path_in_home.as_ref().to_string_lossy());
