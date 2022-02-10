@@ -13,7 +13,7 @@ pub fn try_install(repository: &AbsPath, install_base: &AbsPath) -> Result<(), I
             let file = entry.path();
             eprintln!("Installing {}", file.to_string_lossy());
             let path_in_repo = AbsPath::new(file).map_err(IntoIoError::into_ioerr)?;
-            let result = try_install_file(repository, install_base, &path_in_repo)?;
+            let result = install_file(repository, install_base, &path_in_repo)?;
             if result == InstallStatus::Skipped {
                 eprintln!("Skipped");
             }
@@ -28,7 +28,7 @@ enum InstallStatus {
     Skipped,
 }
 
-fn try_install_file(
+fn install_file(
     repository: &AbsPath,
     install_base: &AbsPath,
     path_in_repo: &AbsPath,
