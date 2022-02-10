@@ -3,8 +3,8 @@ use std::path::PathBuf;
 use serde::Deserialize;
 use serde::Serialize;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Info {
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub struct RepoInfo {
     #[serde(default)]
     pub dirs: Vec<PathBuf>,
 }

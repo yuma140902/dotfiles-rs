@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use crate::error::IntoIoError;
 use crate::error::IoErr;
-use crate::repo::Info;
+use crate::repo::RepoInfo;
 use crate::AbsPath;
 use crate::RelPath;
 
