@@ -58,6 +58,6 @@ fn main() {
         AppSubCommand::Install {
             repository,
             install_base,
-        } => todo!(),
+        } => dotfiles::install(&repository, &install_base),
     }
 }
