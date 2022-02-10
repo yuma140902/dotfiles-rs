@@ -11,6 +11,7 @@ pub type RelPath = more_path_types::Path<Relative, Any>;
 
 mod install;
 mod pick;
+mod repo;
 
 pub static HOME_DIR: Lazy<PathBuf> = Lazy::new(|| dirs::home_dir().expect("no home dir"));
 

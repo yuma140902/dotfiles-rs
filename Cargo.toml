@@ -13,4 +13,6 @@ more_path_types = { git = "https://github.com/yuma140902/more-path-types-rs", re
 once_cell = "1"
 path-absolutize = "3"
 pathdiff = "0.2.1"
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.8.23"
 symlink = "0.1.0"
