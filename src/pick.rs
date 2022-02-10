@@ -12,7 +12,9 @@ pub fn try_pick_files_and_dirs<'a>(
     repository: &AbsPath,
     install_base: &AbsPath,
     files_and_dirs: &'a Vec<PathBuf>,
+    info: &mut RepoInfo,
 ) -> Result<(), IoErr> {
+    let mut dirs = Vec::new();
     for path_in_home in files_and_dirs {
         let path_in_home = AbsPath::new(path_in_home).map_err(IntoIoError::into_ioerr)?;
         if path_in_home.as_ref().is_file() {
@@ -35,6 +37,14 @@ pub fn try_pick_files_and_dirs<'a>(
             }
         }
     }
+
+    let mut dirs: Vec<PathBuf> = dirs
+        .iter()
+        .map(|rel_path| rel_path.as_ref().to_path_buf())
+        .collect();
+    info.dirs.append(&mut dirs);
+    info.dirs.sort();
+    info.dirs.dedup();
 
     Ok(())
 }
