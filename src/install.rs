@@ -17,8 +17,8 @@ pub fn try_install(
         let file = RelPath::new(file).map_err(IntoIoError::into_ioerr)?;
         eprintln!("Installing {}", file.as_ref().to_string_lossy());
         let status = install_file(repository, install_base, &file)?;
-        if status == InstallStatus::Skipped {
-            eprintln!("Skipped");
+        if let InstallStatus::Skipped(reason) = status {
+            eprintln!("Skipped. reason: {:?}", reason);
         } else {
             count += 1;
         }
@@ -31,8 +31,8 @@ pub fn try_install(
         let dir = RelPath::new(dir).map_err(IntoIoError::into_ioerr)?;
         eprintln!("Installing {}", dir.as_ref().to_string_lossy());
         let status = install_dir(repository, install_base, &dir)?;
-        if status == InstallStatus::Skipped {
-            eprintln!("Skipped");
+        if let InstallStatus::Skipped(reason) = status {
+            eprintln!("Skipped. reason: {:?}", reason);
         } else {
             count += 1;
         }
@@ -42,10 +42,15 @@ pub fn try_install(
     Ok(())
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 enum InstallStatus {
     Installed,
-    Skipped,
+    Skipped(SkipReason),
+}
+
+#[derive(Debug, PartialEq)]
+enum SkipReason {
+    AlreadyInstalled,
 }
 
 fn install_file(
@@ -59,7 +64,7 @@ fn install_file(
         AbsPath::with_virtual_working_dir(file, install_base).map_err(IntoIoError::into_ioerr)?;
 
     if in_home.as_ref().exists() {
-        return Ok(InstallStatus::Skipped);
+        return Ok(InstallStatus::Skipped(SkipReason::AlreadyInstalled));
     }
 
     eprintln!(
