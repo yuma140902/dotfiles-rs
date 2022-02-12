@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
@@ -23,16 +24,12 @@ pub fn try_pick_files_and_dirs<'a>(
         if path_in_home.is_file() {
             eprintln!("Picking up file {}", path_in_home.to_string_lossy());
             let result = pick_file(repository, install_base, &path)?;
-            if let PickStatus::Skipped(reason) = result {
-                eprintln!("Skipped. reason: {:?}", reason);
-            }
+            eprintln!("{}", result);
             files.push(path);
         } else if path_in_home.is_dir() {
             eprintln!("Picking up directory {}", path_in_home.to_string_lossy());
             let result = pick_dir(repository, install_base, &path)?;
-            if let PickStatus::Skipped(reason) = result {
-                eprintln!("Skipped. reason: {:?}", reason);
-            }
+            eprintln!("{}", result);
             dirs.push(path);
         }
     }
@@ -56,16 +53,47 @@ pub fn try_pick_files_and_dirs<'a>(
     Ok(())
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum PickStatus {
     Picked,
     Skipped(SkipReason),
+    Errored(ErrorKind),
 }
 
 #[derive(Debug, PartialEq)]
 // TODO
 enum SkipReason {
     AlreadyPicked,
+}
+
+#[derive(Debug, PartialEq)]
+enum ErrorKind {}
+
+impl Display for PickStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PickStatus::Picked => f.write_str("Done.")?,
+            PickStatus::Skipped(reason) => {
+                f.write_fmt(format_args!("Skipped. reason: {}", reason))?
+            }
+            PickStatus::Errored(err) => f.write_fmt(format_args!("Error: {}", err))?,
+        }
+        Ok(())
+    }
+}
+
+impl Display for SkipReason {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:?}", &self))?;
+        Ok(())
+    }
+}
+
+impl Display for ErrorKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:?}", &self))?;
+        Ok(())
+    }
 }
 
 fn pick_file(

@@ -4,6 +4,7 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
+use std::result;
 
 use crate::error::IoErr;
 
@@ -49,9 +50,12 @@ pub fn install(repository: &PathBuf, install_base: &Option<PathBuf>) {
     let info = load_repo_info(&repository).expect("could not load repo info");
 
     let result = install::try_install(&repository, &install_base, &info);
-    if let Err(err) = result {
-        eprintln!("Error in install subcommand");
-        eprintln!("{:#?}", err);
+    match result {
+        Ok(result) => eprintln!("{}", result),
+        Err(err) => {
+            eprintln!("Error in install subcommand");
+            eprintln!("{:#?}", err);
+        }
     }
     save_repo_info(&info, &repository).expect("could not save repo info");
 }
