@@ -61,5 +61,10 @@ cargo install --git https://github.com/yuma140902/dotfiles-rs
 ```bash
 git clone https://github.com/yuma140902/dotfiles-rs.git
 cargo install --path ./dotfiles-rs
-# rm -rf ./dotfiles-rs
+rm -rf ./dotfiles-rs  # インストール後はクローンしたやつを削除してもよい
+```
+
+## アンインストール方法
+```bash
+cargo uninstall dotfiles
 ```
