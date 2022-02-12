@@ -65,6 +65,7 @@ enum PickStatus {
 #[derive(Debug, PartialEq)]
 // TODO
 enum SkipReason {
+    AlreadyPicked,
 }
 
 fn pick_file(
@@ -76,6 +77,10 @@ fn pick_file(
         AbsPath::with_virtual_working_dir(&path, &install_base).map_err(IntoIoError::into_ioerr)?;
     let path_in_repo =
         AbsPath::with_virtual_working_dir(&path, &repository).map_err(IntoIoError::into_ioerr)?;
+
+    if path_in_home.as_ref().is_symlink() {
+        return Ok(PickStatus::Skipped(SkipReason::AlreadyPicked));
+    }
 
     eprintln!(
         "copying {} -> {}",
@@ -109,6 +114,10 @@ fn pick_dir(
         AbsPath::with_virtual_working_dir(&path, &install_base).map_err(IntoIoError::into_ioerr)?;
     let path_in_repo =
         AbsPath::with_virtual_working_dir(&path, &repository).map_err(IntoIoError::into_ioerr)?;
+
+    if path_in_home.as_ref().is_symlink() {
+        return Ok(PickStatus::Skipped(SkipReason::AlreadyPicked));
+    }
 
     eprintln!(
         "copying {} -> {}",
