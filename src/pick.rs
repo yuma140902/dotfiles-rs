@@ -18,6 +18,7 @@ pub fn try_pick_files_and_dirs<'a>(
     for path_in_home in files_and_dirs {
         let path = RelPath::with_virtual_working_dir(path_in_home, install_base)
             .map_err(IntoIoError::into_ioerr)?;
+
         if path_in_home.is_file() {
             eprintln!("Picking up file {}", path_in_home.to_string_lossy());
             let result = pick_file(repository, install_base, &path)?;
@@ -72,10 +73,10 @@ fn pick_file(
     if let Some(dir) = path_in_repo.as_ref().parent() {
         fs::create_dir_all(dir)?;
     }
-    fs::copy(path_in_home, &path_in_repo)?;
+    fs::copy(&path_in_home, &path_in_repo)?;
 
     eprintln!("removing {}", path_in_home.as_ref().to_string_lossy());
-    fs::remove_file(path_in_home)?;
+    fs::remove_file(&path_in_home)?;
 
     eprintln!(
         "creating symlink {} -> {}",
@@ -105,10 +106,10 @@ fn pick_dir(
     if let Some(dir) = path_in_repo.as_ref().parent() {
         fs::create_dir_all(dir)?;
     }
-    copy_dir_recursive(path_in_home, &path_in_repo)?;
+    copy_dir_recursive(&path_in_home, &path_in_repo)?;
 
     eprintln!("removing {}", path_in_home.as_ref().to_string_lossy());
-    fs::remove_dir_all(path_in_home)?;
+    fs::remove_dir_all(&path_in_home)?;
 
     eprintln!(
         "creating symlink {} -> {}",
