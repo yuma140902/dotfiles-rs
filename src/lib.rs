@@ -46,11 +46,14 @@ pub fn install(repository: &PathBuf, install_base: &Option<PathBuf>) {
     let install_base = install_base.as_ref().unwrap_or(&*HOME_DIR);
     let install_base = AbsPath::new(install_base).expect("could not absolutize install_base");
 
-    let result = install::try_install(&repository, &install_base);
+    let info = load_repo_info(&repository).expect("could not load repo info");
+
+    let result = install::try_install(&repository, &install_base, &info);
     if let Err(err) = result {
         eprintln!("Error in install subcommand");
         eprintln!("{:#?}", err);
     }
+    save_repo_info(&info, &repository).expect("could not save repo info");
 }
 
 const REPO_INFO_FILE_NAME: &str = "dotfiles-rs.yml";
