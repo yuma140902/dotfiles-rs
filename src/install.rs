@@ -1,7 +1,5 @@
-use std::ffi::OsStr;
 use std::fs;
 use std::path::Path;
-use std::path::PathBuf;
 
 use crate::error::IntoIoError;
 use crate::error::IoErr;
@@ -14,7 +12,35 @@ pub fn try_install(
     install_base: &AbsPath,
     info: &RepoInfo,
 ) -> Result<(), IoErr> {
-    install_dir(repository, install_base, repository, &info.dirs)
+    eprintln!("Installing files");
+    let mut count = 0;
+    for file in &info.files {
+        let file = RelPath::new(file).map_err(IntoIoError::into_ioerr)?;
+        eprintln!("Installing {}", file.as_ref().to_string_lossy());
+        let status = install_file(repository, install_base, &file)?;
+        if status == InstallStatus::Skipped {
+            eprintln!("Skipped");
+        } else {
+            count += 1;
+        }
+    }
+    eprintln!("Installed {} files", count);
+
+    eprintln!("Installing directories");
+    let mut count = 0;
+    for dir in &info.dirs {
+        let dir = RelPath::new(dir).map_err(IntoIoError::into_ioerr)?;
+        eprintln!("Installing {}", dir.as_ref().to_string_lossy());
+        let status = install_dir(repository, install_base, &dir)?;
+        if status == InstallStatus::Skipped {
+            eprintln!("Skipped");
+        } else {
+            count += 1;
+        }
+    }
+    eprintln!("Installed {} directories", count);
+
+    Ok(())
 }
 
 #[derive(Debug, PartialEq)]
@@ -23,82 +49,37 @@ enum InstallStatus {
     Skipped,
 }
 
-fn install_dir(
-    from: impl AsRef<Path>,
-    to: impl AsRef<Path>,
-    repository: &AbsPath,
-    dirs: &Vec<PathBuf>,
-) -> Result<(), IoErr> {
-    for entry in from.as_ref().read_dir()? {
-        let entry = entry?;
-        let file_type = entry.file_type()?;
-        if file_type.is_file() {
-            let status = install_file(&from, &to, &entry.file_name())?;
-            if status == InstallStatus::Skipped {
-                eprintln!("Skipped");
-            }
-        } else if file_type.is_dir() {
-            let from = from.as_ref().join(entry.file_name());
-            let to = to.as_ref().join(entry.file_name());
-            let rel_src = RelPath::with_virtual_working_dir(&from, repository)
-                .map_err(IntoIoError::into_ioerr)?;
-            if dirs.contains(&rel_src.as_ref().to_path_buf()) {
-                let status = install_dir_itself(&from, &to)?;
-                if status == InstallStatus::Skipped {
-                    eprintln!("Skipped");
-                }
-            } else {
-                install_dir(&from, &to, repository, dirs)?;
-            }
-        } else {
-            continue;
-        }
-    }
-    Ok(())
-}
-
 fn install_file(
-    src_dir: impl AsRef<Path>,
-    dst_dir: impl AsRef<Path>,
-    file_name: &OsStr,
+    repository: &AbsPath,
+    install_base: &AbsPath,
+    file: &RelPath,
 ) -> Result<InstallStatus, IoErr> {
-    let from = AbsPath::new(src_dir.as_ref().join(file_name)).map_err(IntoIoError::into_ioerr)?;
-    let to = dst_dir.as_ref().join(file_name);
+    let in_repo =
+        AbsPath::with_virtual_working_dir(file, repository).map_err(IntoIoError::into_ioerr)?;
+    let in_home =
+        AbsPath::with_virtual_working_dir(file, install_base).map_err(IntoIoError::into_ioerr)?;
 
-    if to.exists() {
+    if in_home.as_ref().exists() {
         return Ok(InstallStatus::Skipped);
     }
 
     eprintln!(
-        "creating symlink {} -> {}",
-        to.to_string_lossy(),
-        from.as_ref().to_string_lossy(),
+        "Creating symlink {} -> {}",
+        in_home.as_ref().to_string_lossy(),
+        in_repo.as_ref().to_string_lossy()
     );
-    fs::create_dir_all(&dst_dir)?;
-    crate::make_symlink(&to, &from)?;
-
-    Ok(InstallStatus::Installed)
-}
-
-fn install_dir_itself(
-    from: impl AsRef<Path>,
-    to: impl AsRef<Path>,
-) -> Result<InstallStatus, IoErr> {
-    let from = AbsPath::new(&from).map_err(IntoIoError::into_ioerr)?;
-
-    if to.as_ref().exists() {
-        return Ok(InstallStatus::Skipped);
-    }
-
-    eprintln!(
-        "creating dir symlink {} -> {}",
-        to.as_ref().to_string_lossy(),
-        from.as_ref().to_string_lossy(),
-    );
-    if let Some(dir) = to.as_ref().parent() {
+    if let Some(dir) = in_home.as_ref().parent() {
         fs::create_dir_all(dir)?;
     }
-    crate::make_symlink(&to, &from)?;
+    crate::make_symlink(&in_home, &in_repo)?;
 
     Ok(InstallStatus::Installed)
+}
+
+fn install_dir(
+    repository: &AbsPath,
+    install_base: &AbsPath,
+    dir: &RelPath,
+) -> Result<InstallStatus, IoErr> {
+    install_file(repository, install_base, dir)
 }
