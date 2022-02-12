@@ -14,6 +14,7 @@ pub fn try_pick_files_and_dirs<'a>(
     files_and_dirs: &'a Vec<PathBuf>,
     info: &mut RepoInfo,
 ) -> Result<(), IoErr> {
+    let mut files: Vec<RelPath> = Vec::new();
     let mut dirs: Vec<RelPath> = Vec::new();
     for path_in_home in files_and_dirs {
         let path = RelPath::with_virtual_working_dir(path_in_home, install_base)
@@ -25,18 +26,24 @@ pub fn try_pick_files_and_dirs<'a>(
             if result == PickStatus::Skipped {
                 eprintln!("Skipped");
             }
+            files.push(path);
         } else if path_in_home.is_dir() {
             eprintln!("Picking up directory {}", path_in_home.to_string_lossy());
             let result = pick_dir(repository, install_base, &path)?;
             if result == PickStatus::Skipped {
                 eprintln!("Skipped");
             }
-        } else {
-            continue;
+            dirs.push(path);
         }
-
-        dirs.push(path);
     }
+
+    let mut files: Vec<PathBuf> = files
+        .iter()
+        .map(|rel_path| rel_path.as_ref().to_path_buf())
+        .collect();
+    info.files.append(&mut files);
+    info.files.sort();
+    info.files.dedup();
 
     let mut dirs: Vec<PathBuf> = dirs
         .iter()
