@@ -1,5 +1,4 @@
 use std::fs;
-use std::path::Path;
 
 use crate::error::IntoIoError;
 use crate::error::IoErr;
