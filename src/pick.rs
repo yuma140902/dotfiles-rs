@@ -16,22 +16,17 @@ pub fn try_pick_files_and_dirs<'a>(
 ) -> Result<(), IoErr> {
     let mut dirs = Vec::new();
     for path_in_home in files_and_dirs {
-        let path_in_home = AbsPath::new(path_in_home).map_err(IntoIoError::into_ioerr)?;
-        if path_in_home.as_ref().is_file() {
-            eprintln!(
-                "Picking up file {}",
-                path_in_home.as_ref().to_string_lossy()
-            );
-            let result = pick_file(repository, install_base, &path_in_home)?;
+        let path = RelPath::with_virtual_working_dir(path_in_home, install_base)
+            .map_err(IntoIoError::into_ioerr)?;
+        if path_in_home.is_file() {
+            eprintln!("Picking up file {}", path_in_home.to_string_lossy());
+            let result = pick_file(repository, install_base, &path)?;
             if result == PickStatus::Skipped {
                 eprintln!("Skipped");
             }
-        } else if path_in_home.as_ref().is_dir() {
-            eprintln!(
-                "Picking up directory {}",
-                path_in_home.as_ref().to_string_lossy()
-            );
-            let result = pick_dir(repository, install_base, &path_in_home, &mut dirs)?;
+        } else if path_in_home.is_dir() {
+            eprintln!("Picking up directory {}", path_in_home.to_string_lossy());
+            let result = pick_dir(repository, install_base, &path, &mut dirs)?;
             if result == PickStatus::Skipped {
                 eprintln!("Skipped");
             }
@@ -58,13 +53,12 @@ enum PickStatus {
 fn pick_file(
     repository: &AbsPath,
     install_base: &AbsPath,
-    path_in_home: &AbsPath,
+    path: &RelPath,
 ) -> Result<PickStatus, IoErr> {
-    let path_rel = RelPath::with_virtual_working_dir(path_in_home, &install_base)
-        .map_err(IntoIoError::into_ioerr)?;
-
-    let path_in_repo = AbsPath::with_virtual_working_dir(&path_rel, &repository)
-        .map_err(IntoIoError::into_ioerr)?;
+    let path_in_home =
+        AbsPath::with_virtual_working_dir(&path, &install_base).map_err(IntoIoError::into_ioerr)?;
+    let path_in_repo =
+        AbsPath::with_virtual_working_dir(&path, &repository).map_err(IntoIoError::into_ioerr)?;
 
     eprintln!(
         "copying {} -> {}",
@@ -92,14 +86,13 @@ fn pick_file(
 fn pick_dir(
     repository: &AbsPath,
     install_base: &AbsPath,
-    path_in_home: &AbsPath,
+    path: &RelPath,
     dirs: &mut Vec<RelPath>,
 ) -> Result<PickStatus, IoErr> {
-    let path_rel = RelPath::with_virtual_working_dir(path_in_home, &install_base)
-        .map_err(IntoIoError::into_ioerr)?;
-
-    let path_in_repo = AbsPath::with_virtual_working_dir(&path_rel, &repository)
-        .map_err(IntoIoError::into_ioerr)?;
+    let path_in_home =
+        AbsPath::with_virtual_working_dir(&path, &install_base).map_err(IntoIoError::into_ioerr)?;
+    let path_in_repo =
+        AbsPath::with_virtual_working_dir(&path, &repository).map_err(IntoIoError::into_ioerr)?;
 
     eprintln!(
         "copying {} -> {}",
@@ -121,7 +114,7 @@ fn pick_dir(
     );
     crate::make_symlink(path_in_home, &path_in_repo)?;
 
-    dirs.push(path_rel);
+    dirs.push(path);
 
     Ok(PickStatus::Picked)
 }
