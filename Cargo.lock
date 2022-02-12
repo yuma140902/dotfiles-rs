@@ -89,8 +89,6 @@ dependencies = [
  "dirs",
  "more_path_types",
  "once_cell",
- "path-absolutize",
- "pathdiff",
  "serde",
  "serde_yaml",
  "symlink",
