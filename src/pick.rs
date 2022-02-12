@@ -23,15 +23,15 @@ pub fn try_pick_files_and_dirs<'a>(
         if path_in_home.is_file() {
             eprintln!("Picking up file {}", path_in_home.to_string_lossy());
             let result = pick_file(repository, install_base, &path)?;
-            if result == PickStatus::Skipped {
-                eprintln!("Skipped");
+            if let PickStatus::Skipped(reason) = result {
+                eprintln!("Skipped. reason: {:?}", reason);
             }
             files.push(path);
         } else if path_in_home.is_dir() {
             eprintln!("Picking up directory {}", path_in_home.to_string_lossy());
             let result = pick_dir(repository, install_base, &path)?;
-            if result == PickStatus::Skipped {
-                eprintln!("Skipped");
+            if let PickStatus::Skipped(reason) = result {
+                eprintln!("Skipped. reason: {:?}", reason);
             }
             dirs.push(path);
         }
@@ -56,10 +56,15 @@ pub fn try_pick_files_and_dirs<'a>(
     Ok(())
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 enum PickStatus {
     Picked,
-    Skipped, // TODO
+    Skipped(SkipReason),
+}
+
+#[derive(Debug, PartialEq)]
+// TODO
+enum SkipReason {
 }
 
 fn pick_file(
