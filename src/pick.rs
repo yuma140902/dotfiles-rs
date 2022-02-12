@@ -14,7 +14,7 @@ pub fn try_pick_files_and_dirs<'a>(
     files_and_dirs: &'a Vec<PathBuf>,
     info: &mut RepoInfo,
 ) -> Result<(), IoErr> {
-    let mut dirs = Vec::new();
+    let mut dirs: Vec<RelPath> = Vec::new();
     for path_in_home in files_and_dirs {
         let path = RelPath::with_virtual_working_dir(path_in_home, install_base)
             .map_err(IntoIoError::into_ioerr)?;
@@ -26,11 +26,15 @@ pub fn try_pick_files_and_dirs<'a>(
             }
         } else if path_in_home.is_dir() {
             eprintln!("Picking up directory {}", path_in_home.to_string_lossy());
-            let result = pick_dir(repository, install_base, &path, &mut dirs)?;
+            let result = pick_dir(repository, install_base, &path)?;
             if result == PickStatus::Skipped {
                 eprintln!("Skipped");
             }
+        } else {
+            continue;
         }
+
+        dirs.push(path);
     }
 
     let mut dirs: Vec<PathBuf> = dirs
@@ -87,7 +91,6 @@ fn pick_dir(
     repository: &AbsPath,
     install_base: &AbsPath,
     path: &RelPath,
-    dirs: &mut Vec<RelPath>,
 ) -> Result<PickStatus, IoErr> {
     let path_in_home =
         AbsPath::with_virtual_working_dir(&path, &install_base).map_err(IntoIoError::into_ioerr)?;
@@ -113,8 +116,6 @@ fn pick_dir(
         path_in_repo.as_ref().to_string_lossy()
     );
     crate::make_symlink(path_in_home, &path_in_repo)?;
-
-    dirs.push(path);
 
     Ok(PickStatus::Picked)
 }
